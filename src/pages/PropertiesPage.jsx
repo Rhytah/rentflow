@@ -4,19 +4,17 @@ import { useAuth } from '@/lib/auth'
 import { useProperties, useUnits, useCreateProperty } from '@/hooks/useProperties'
 import { formatUGXShort } from '@/lib/utils'
 import { Card, CardHeader, MetricCard, PageLoader, EmptyState, Modal, ProgressBar } from '@/components/shared'
-import type { Property } from '@/types/database'
 import toast from 'react-hot-toast'
 
 export function PropertiesPage() {
   const { profile } = useAuth()
   const { data: properties = [], isLoading } = useProperties(profile?.id)
-  const [selected, setSelected] = useState<Property | null>(null)
+  const [selected, setSelected] = useState(null)
   const [addModal, setAddModal] = useState(false)
 
   if (isLoading) return <PageLoader />
 
-  const totalUnits    = properties.reduce((s, p) => s + p.total_units, 0)
-  const totalOccupied = 0 // would come from units query in real app
+  const totalUnits = properties.reduce((s, p) => s + p.total_units, 0)
 
   return (
     <div className="p-6 space-y-5">
@@ -25,7 +23,7 @@ export function PropertiesPage() {
           <h1 className="text-xl font-semibold text-gray-900">Properties</h1>
           <p className="text-sm text-gray-500 mt-0.5">{properties.length} properties · {totalUnits} total units</p>
         </div>
-        <button onClick={() => setAddModal(true)} className="btn-primary flex items-center gap-1.5 text-sm">
+        <button type="button" onClick={() => setAddModal(true)} className="btn-primary flex items-center gap-1.5 text-sm">
           <Plus size={14} /> Add property
         </button>
       </div>
@@ -36,7 +34,7 @@ export function PropertiesPage() {
           title="No properties yet"
           description="Add your first property to get started"
           action={
-            <button onClick={() => setAddModal(true)} className="btn-primary text-sm px-4 py-2">
+            <button type="button" onClick={() => setAddModal(true)} className="btn-primary text-sm px-4 py-2">
               Add property
             </button>
           }
@@ -61,17 +59,13 @@ export function PropertiesPage() {
   )
 }
 
-function PropertyCard({ property, isSelected, onClick }: {
-  property: Property; isSelected: boolean; onClick: () => void
-}) {
-  // occupancy would be fetched per property in real implementation
-  const occupiedUnits = Math.floor(property.total_units * 0.875) // placeholder
+function PropertyCard({ property, isSelected, onClick }) {
+  const occupiedUnits = Math.floor(property.total_units * 0.875)
   const occupancyPct = Math.round((occupiedUnits / property.total_units) * 100)
 
   return (
     <Card
       className={`cursor-pointer transition-all hover:border-brand-200 ${isSelected ? 'border-brand-300 bg-brand-50/20' : ''}`}
-      // @ts-ignore
       onClick={onClick}
     >
       <div className="flex items-start justify-between mb-3">
@@ -96,7 +90,7 @@ function PropertyCard({ property, isSelected, onClick }: {
   )
 }
 
-function PropertyDetail({ property }: { property: Property }) {
+function PropertyDetail({ property }) {
   const { data: units = [], isLoading } = useUnits(property.id)
 
   return (
@@ -126,12 +120,12 @@ function PropertyDetail({ property }: { property: Property }) {
   )
 }
 
-function AddPropertyModal({ ownerId, onClose }: { ownerId: string; onClose: () => void }) {
+function AddPropertyModal({ ownerId, onClose }) {
   const { mutateAsync, isPending } = useCreateProperty()
   const [form, setForm] = useState({ name: '', address: '', city: 'Kampala', total_units: 1 })
-  function set(key: string, val: any) { setForm(f => ({ ...f, [key]: val })) }
+  function set(key, val) { setForm(f => ({ ...f, [key]: val })) }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e) {
     e.preventDefault()
     try {
       await mutateAsync({ ...form, owner_id: ownerId })

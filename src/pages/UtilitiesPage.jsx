@@ -2,33 +2,32 @@ import { useState } from 'react'
 import { format } from 'date-fns'
 import { Plus, Zap, Droplets, Wifi, Trash2, Shield, MoreHorizontal } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
-import { useProperties, useUtilityBills, useMarkUtilityPaid } from '@/hooks/useProperties'
+import { useProperties, useUtilityBills, useMarkUtilityPaid, useCreateUtilityBill } from '@/hooks/useProperties'
 import { formatUGX, formatUGXShort } from '@/lib/utils'
 import { Card, CardHeader, MetricCard, StatusPill, PageLoader, EmptyState, Modal } from '@/components/shared'
-import type { UtilityBill, UtilityType } from '@/types/database'
 import toast from 'react-hot-toast'
 
-const UTILITY_ICONS: Record<UtilityType, React.FC<{ size?: number; className?: string }>> = {
+const UTILITY_ICONS = {
   electricity: Zap,
-  water:       Droplets,
-  internet:    Wifi,
-  garbage:     Trash2,
-  security:    Shield,
-  other:       MoreHorizontal,
+  water: Droplets,
+  internet: Wifi,
+  garbage: Trash2,
+  security: Shield,
+  other: MoreHorizontal,
 }
 
-const UTILITY_COLORS: Record<UtilityType, string> = {
+const UTILITY_COLORS = {
   electricity: 'bg-amber-50 text-amber-600',
-  water:       'bg-blue-50 text-blue-600',
-  internet:    'bg-purple-50 text-purple-600',
-  garbage:     'bg-green-50 text-green-600',
-  security:    'bg-gray-50 text-gray-600',
-  other:       'bg-gray-50 text-gray-500',
+  water: 'bg-blue-50 text-blue-600',
+  internet: 'bg-purple-50 text-purple-600',
+  garbage: 'bg-green-50 text-green-600',
+  security: 'bg-gray-50 text-gray-600',
+  other: 'bg-gray-50 text-gray-500',
 }
 
 const now = new Date()
 const MONTH = now.getMonth() + 1
-const YEAR  = now.getFullYear()
+const YEAR = now.getFullYear()
 
 export function UtilitiesPage() {
   const { profile } = useAuth()
@@ -40,14 +39,13 @@ export function UtilitiesPage() {
   const { data: bills = [], isLoading } = useUtilityBills(propId, MONTH, YEAR)
   const { mutateAsync: markPaid } = useMarkUtilityPaid()
 
-  const totalDue  = bills.filter(b => b.status !== 'paid').reduce((s, b) => s + Number(b.amount), 0)
+  const totalDue = bills.filter(b => b.status !== 'paid').reduce((s, b) => s + Number(b.amount), 0)
   const totalPaid = bills.filter(b => b.status === 'paid').reduce((s, b) => s + Number(b.amount), 0)
-  const upcoming  = bills.filter(b => b.status === 'upcoming').length
-  const overdue   = bills.filter(b => b.status === 'overdue').length
+  const overdue = bills.filter(b => b.status === 'overdue').length
 
   if (propsLoading) return <PageLoader />
 
-  async function handleMarkPaid(id: string) {
+  async function handleMarkPaid(id) {
     try {
       await markPaid(id)
       toast.success('Marked as paid')
@@ -71,7 +69,7 @@ export function UtilitiesPage() {
           >
             {properties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
-          <button onClick={() => setAddModal(true)} className="btn-primary flex items-center gap-1.5 text-sm">
+          <button type="button" onClick={() => setAddModal(true)} className="btn-primary flex items-center gap-1.5 text-sm">
             <Plus size={14} /> Add bill
           </button>
         </div>
@@ -84,13 +82,12 @@ export function UtilitiesPage() {
         <MetricCard label="Overdue" value={String(overdue)} subColor={overdue > 0 ? 'red' : undefined} />
       </div>
 
-      {/* Bill cards grid */}
       {isLoading ? <PageLoader /> : bills.length === 0 ? (
         <EmptyState
           title="No utility bills for this month"
           description="Add electricity, water, internet and other bills"
           action={
-            <button onClick={() => setAddModal(true)} className="btn-primary text-sm px-4 py-2">
+            <button type="button" onClick={() => setAddModal(true)} className="btn-primary text-sm px-4 py-2">
               Add first bill
             </button>
           }
@@ -103,7 +100,6 @@ export function UtilitiesPage() {
         </div>
       )}
 
-      {/* Per-unit breakdown */}
       {bills.length > 0 && (
         <Card>
           <CardHeader title="Monthly summary by type" />
@@ -115,12 +111,12 @@ export function UtilitiesPage() {
                 acc[key].total += Number(b.amount)
                 acc[key].count++
                 return acc
-              }, {} as Record<string, { total: number; count: number }>)
+              }, {})
             ).map(([type, { total, count }]) => {
-              const Icon = UTILITY_ICONS[type as UtilityType] ?? MoreHorizontal
+              const Icon = UTILITY_ICONS[type] ?? MoreHorizontal
               return (
                 <div key={type} className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${UTILITY_COLORS[type as UtilityType]}`}>
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${UTILITY_COLORS[type]}`}>
                     <Icon size={14} />
                   </div>
                   <div className="flex-1">
@@ -148,7 +144,7 @@ export function UtilitiesPage() {
   )
 }
 
-function UtilityCard({ bill, onMarkPaid }: { bill: UtilityBill; onMarkPaid: () => void }) {
+function UtilityCard({ bill, onMarkPaid }) {
   const Icon = UTILITY_ICONS[bill.type] ?? MoreHorizontal
   const isPaid = bill.status === 'paid'
 
@@ -169,7 +165,7 @@ function UtilityCard({ bill, onMarkPaid }: { bill: UtilityBill; onMarkPaid: () =
         {!bill.unit && ' · Whole building'}
       </p>
       {!isPaid && (
-        <button onClick={onMarkPaid} className="btn w-full text-sm">Mark as paid</button>
+        <button type="button" onClick={onMarkPaid} className="btn w-full text-sm">Mark as paid</button>
       )}
       {isPaid && bill.paid_at && (
         <p className="text-xs text-green-600 text-center">
@@ -180,22 +176,21 @@ function UtilityCard({ bill, onMarkPaid }: { bill: UtilityBill; onMarkPaid: () =
   )
 }
 
-function AddBillModal({ propId, onClose }: { propId: string; onClose: () => void }) {
-  const { useCreateUtilityBill } = require('@/hooks/useProperties')
+function AddBillModal({ propId, onClose }) {
   const { mutateAsync, isPending } = useCreateUtilityBill()
   const [form, setForm] = useState({
-    type: 'electricity' as UtilityType,
+    type: 'electricity',
     provider: '',
     amount: '',
     due_date: '',
     split_among_units: false,
   })
 
-  function set(key: string, val: any) {
+  function set(key, val) {
     setForm(f => ({ ...f, [key]: val }))
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e) {
     e.preventDefault()
     try {
       await mutateAsync({

@@ -1,18 +1,16 @@
-import { ReactNode } from 'react'
 import { Loader2 } from 'lucide-react'
-import type { PaymentStatus } from '@/types/database'
 import { classNames } from '@/lib/utils'
 
 // ── STATUS PILL ───────────────────────────────────────────────
-const pillMap: Record<PaymentStatus, string> = {
-  paid:     'pill-green',
-  overdue:  'pill-red',
-  partial:  'pill-amber',
-  pending:  'pill-blue',
+const pillMap = {
+  paid: 'pill-green',
+  overdue: 'pill-red',
+  partial: 'pill-amber',
+  pending: 'pill-blue',
   upcoming: 'pill-gray',
 }
 
-export function StatusPill({ status }: { status: PaymentStatus }) {
+export function StatusPill({ status }) {
   return (
     <span className={`pill ${pillMap[status]}`}>
       {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -29,7 +27,7 @@ const avatarColors = [
   'bg-teal-50 text-teal-800',
 ]
 
-export function Avatar({ name, size = 'sm' }: { name: string; size?: 'sm' | 'md' | 'lg' }) {
+export function Avatar({ name, size = 'sm' }) {
   const initials = name.split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase()
   const colorIdx = name.charCodeAt(0) % avatarColors.length
   const sizeClass = size === 'lg' ? 'w-12 h-12 text-base' : size === 'md' ? 'w-9 h-9 text-sm' : 'w-7 h-7 text-xs'
@@ -41,7 +39,7 @@ export function Avatar({ name, size = 'sm' }: { name: string; size?: 'sm' | 'md'
 }
 
 // ── LOADING SPINNER ────────────────────────────────────────────
-export function Spinner({ className }: { className?: string }) {
+export function Spinner({ className }) {
   return <Loader2 className={classNames('animate-spin text-brand-600', className ?? 'w-5 h-5')} />
 }
 
@@ -54,9 +52,7 @@ export function PageLoader() {
 }
 
 // ── EMPTY STATE ───────────────────────────────────────────────
-export function EmptyState({ icon, title, description, action }: {
-  icon?: ReactNode; title: string; description?: string; action?: ReactNode
-}) {
+export function EmptyState({ icon, title, description, action }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
       {icon && <div className="text-gray-300 mb-3">{icon}</div>}
@@ -68,9 +64,7 @@ export function EmptyState({ icon, title, description, action }: {
 }
 
 // ── METRIC CARD ───────────────────────────────────────────────
-export function MetricCard({ label, value, sub, subColor }: {
-  label: string; value: string; sub?: string; subColor?: 'green' | 'red' | 'amber'
-}) {
+export function MetricCard({ label, value, sub, subColor }) {
   const subClass = subColor === 'green' ? 'text-green-600' : subColor === 'red' ? 'text-red-600' : subColor === 'amber' ? 'text-amber-600' : 'text-gray-400'
   return (
     <div className="metric-card">
@@ -82,11 +76,15 @@ export function MetricCard({ label, value, sub, subColor }: {
 }
 
 // ── SECTION CARD ──────────────────────────────────────────────
-export function Card({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={classNames('card', className)}>{children}</div>
+export function Card({ children, className, onClick }) {
+  return (
+    <div className={classNames('card', className)} onClick={onClick} role={onClick ? 'button' : undefined}>
+      {children}
+    </div>
+  )
 }
 
-export function CardHeader({ title, action }: { title: string; action?: ReactNode }) {
+export function CardHeader({ title, action }) {
   return (
     <div className="flex items-center justify-between mb-4">
       <h3 className="text-sm font-medium text-gray-800">{title}</h3>
@@ -96,9 +94,7 @@ export function CardHeader({ title, action }: { title: string; action?: ReactNod
 }
 
 // ── MODAL ──────────────────────────────────────────────────────
-export function Modal({ open, onClose, title, children }: {
-  open: boolean; onClose: () => void; title: string; children: ReactNode
-}) {
+export function Modal({ open, onClose, title, children }) {
   if (!open) return null
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -112,7 +108,7 @@ export function Modal({ open, onClose, title, children }: {
 }
 
 // ── PROGRESS BAR ──────────────────────────────────────────────
-export function ProgressBar({ pct, color = 'brand' }: { pct: number; color?: 'brand' | 'green' | 'red' | 'amber' }) {
+export function ProgressBar({ pct, color = 'brand' }) {
   const fill = color === 'green' ? 'bg-green-500' : color === 'red' ? 'bg-red-400' : color === 'amber' ? 'bg-amber-400' : 'bg-brand-600'
   return (
     <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">

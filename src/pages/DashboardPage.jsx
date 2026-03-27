@@ -1,10 +1,9 @@
-import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { format } from 'date-fns'
-import { ArrowRight, AlertCircle, CheckCircle2, Clock } from 'lucide-react'
+import { ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
-import { useProperties } from '@/hooks/useProperties'
-import { usePayments, usePaymentSummary } from '@/hooks/usePayments'
+import { useProperties, useMyLease } from '@/hooks/useProperties'
+import { usePayments, usePaymentSummary, useMyPayments } from '@/hooks/usePayments'
 import { formatUGX, formatUGXShort } from '@/lib/utils'
 import {
   MetricCard, Card, CardHeader, StatusPill, Avatar,
@@ -16,7 +15,7 @@ import {
 
 const now = new Date()
 const MONTH = now.getMonth() + 1
-const YEAR  = now.getFullYear()
+const YEAR = now.getFullYear()
 
 export function DashboardPage() {
   const { profile } = useAuth()
@@ -25,23 +24,21 @@ export function DashboardPage() {
   return isTenant ? <TenantDashboard /> : <LandlordDashboard />
 }
 
-// ── LANDLORD / MANAGER / OWNER DASHBOARD ─────────────────────
 function LandlordDashboard() {
   const { profile } = useAuth()
   const { data: properties = [], isLoading: propsLoading } = useProperties(profile?.id)
 
-  // Use first property for summary (real app: aggregate all)
   const primaryProperty = properties[0]
   const { data: summary, isLoading: sumLoading } = usePaymentSummary(
     primaryProperty?.id ?? '', MONTH, YEAR
   )
-  const { data: payments = [], isLoading: payLoading } = usePayments(
+  const { data: payments = [] } = usePayments(
     primaryProperty?.id, MONTH, YEAR
   )
 
   if (propsLoading || sumLoading) return <PageLoader />
 
-  const overdue  = payments.filter(p => p.status === 'overdue')
+  const overdue = payments.filter(p => p.status === 'overdue')
   const recentPaid = payments.filter(p => p.status === 'paid').slice(0, 5)
 
   const chartData = [
@@ -54,7 +51,6 @@ function LandlordDashboard() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">
@@ -69,7 +65,6 @@ function LandlordDashboard() {
         </Link>
       </div>
 
-      {/* Metrics */}
       <div className="grid grid-cols-4 gap-3">
         <MetricCard
           label="Expected this month"
@@ -100,14 +95,13 @@ function LandlordDashboard() {
       </div>
 
       <div className="grid grid-cols-3 gap-4">
-        {/* Revenue chart */}
         <Card className="col-span-2">
           <CardHeader title="Revenue — last 5 months" />
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={chartData} barSize={32}>
               <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
               <YAxis tickFormatter={v => `${Math.round(v / 1_000_000)}M`} tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
-              <Tooltip formatter={(v: number) => formatUGX(v)} cursor={{ fill: '#f3f4f6' }} />
+              <Tooltip formatter={v => formatUGX(Number(v))} cursor={{ fill: '#f3f4f6' }} />
               <Bar dataKey="amount" radius={[4, 4, 0, 0]}>
                 {chartData.map((_, i) => (
                   <Cell key={i} fill={i === chartData.length - 1 ? '#185FA5' : '#B5D4F4'} />
@@ -117,7 +111,6 @@ function LandlordDashboard() {
           </ResponsiveContainer>
         </Card>
 
-        {/* Collection breakdown */}
         <Card>
           <CardHeader title="This month" />
           <div className="space-y-3">
@@ -150,7 +143,6 @@ function LandlordDashboard() {
             </div>
           </div>
 
-          {/* Properties */}
           <div className="mt-5 pt-4 border-t border-gray-100">
             <p className="text-xs font-medium text-gray-500 mb-3">Properties</p>
             <div className="space-y-2">
@@ -166,7 +158,6 @@ function LandlordDashboard() {
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        {/* Overdue alerts */}
         <Card>
           <CardHeader
             title="Overdue payments"
@@ -199,7 +190,6 @@ function LandlordDashboard() {
           )}
         </Card>
 
-        {/* Recent payments */}
         <Card>
           <CardHeader
             title="Recent payments"
@@ -234,11 +224,8 @@ function LandlordDashboard() {
   )
 }
 
-// ── TENANT DASHBOARD ──────────────────────────────────────────
 function TenantDashboard() {
   const { profile } = useAuth()
-  const { useMyLease } = require('@/hooks/useProperties')
-  const { useMyPayments } = require('@/hooks/usePayments')
   const { data: lease } = useMyLease(profile?.id)
   const { data: payments = [] } = useMyPayments(profile?.id)
 

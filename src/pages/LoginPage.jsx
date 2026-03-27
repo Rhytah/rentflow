@@ -12,14 +12,14 @@ export function LoginPage() {
   const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e) {
     e.preventDefault()
     setLoading(true)
     try {
       await signIn(email, password)
       navigate('/')
-    } catch (err: any) {
-      toast.error(err.message ?? 'Sign in failed')
+    } catch (err) {
+      toast.error(err?.message ?? 'Sign in failed')
     } finally {
       setLoading(false)
     }

@@ -3,13 +3,12 @@ import { useNavigate, Link } from 'react-router-dom'
 import { Building2 } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import toast from 'react-hot-toast'
-import type { UserRole } from '@/types/database'
 
-const roles: { value: UserRole; label: string; desc: string }[] = [
-  { value: 'landlord',         label: 'Landlord',          desc: 'I own and manage my own properties' },
-  { value: 'property_manager', label: 'Property Manager',  desc: 'I manage properties for owners' },
-  { value: 'tenant',           label: 'Tenant',            desc: 'I rent a property' },
-  { value: 'homeowner',        label: 'Homeowner',         desc: 'I own property managed by someone else' },
+const roles = [
+  { value: 'landlord', label: 'Landlord', desc: 'I own and manage my own properties' },
+  { value: 'property_manager', label: 'Property Manager', desc: 'I manage properties for owners' },
+  { value: 'tenant', label: 'Tenant', desc: 'I rent a property' },
+  { value: 'homeowner', label: 'Homeowner', desc: 'I own property managed by someone else' },
 ]
 
 export function SignUpPage() {
@@ -18,18 +17,18 @@ export function SignUpPage() {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [role, setRole] = useState<UserRole>('landlord')
+  const [role, setRole] = useState('landlord')
   const [loading, setLoading] = useState(false)
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e) {
     e.preventDefault()
     setLoading(true)
     try {
       await signUp(email, password, fullName, role)
       toast.success('Account created! Please check your email to verify.')
       navigate('/login')
-    } catch (err: any) {
-      toast.error(err.message ?? 'Sign up failed')
+    } catch (err) {
+      toast.error(err?.message ?? 'Sign up failed')
     } finally {
       setLoading(false)
     }

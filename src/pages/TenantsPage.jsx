@@ -1,18 +1,17 @@
 import { useState } from 'react'
 import { format, differenceInDays } from 'date-fns'
-import { Search, Plus, Phone, Mail, UserCheck } from 'lucide-react'
+import { Search, Plus, Phone, Mail } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { useProperties, useLeases } from '@/hooks/useProperties'
 import { formatUGX, formatUGXShort } from '@/lib/utils'
 import { Card, CardHeader, Avatar, StatusPill, PageLoader, EmptyState, MetricCard } from '@/components/shared'
-import type { Lease } from '@/types/database'
 
 export function TenantsPage() {
   const { profile } = useAuth()
   const { data: properties = [], isLoading: propsLoading } = useProperties(profile?.id)
   const [selectedProperty, setSelectedProperty] = useState('')
   const [search, setSearch] = useState('')
-  const [selected, setSelected] = useState<Lease | null>(null)
+  const [selected, setSelected] = useState(null)
 
   const propId = selectedProperty || properties[0]?.id
   const { data: leases = [], isLoading } = useLeases(propId)
@@ -35,7 +34,7 @@ export function TenantsPage() {
           <h1 className="text-xl font-semibold text-gray-900">Tenants</h1>
           <p className="text-sm text-gray-500 mt-0.5">{leases.length} active leases</p>
         </div>
-        <button className="btn-primary flex items-center gap-1.5 text-sm">
+        <button type="button" className="btn-primary flex items-center gap-1.5 text-sm">
           <Plus size={14} /> Add tenant
         </button>
       </div>
@@ -56,7 +55,6 @@ export function TenantsPage() {
       </div>
 
       <div className="flex gap-4">
-        {/* Tenant list */}
         <Card className="flex-1">
           <div className="flex items-center gap-3 mb-4">
             <select
@@ -76,7 +74,7 @@ export function TenantsPage() {
             <EmptyState
               title="No tenants found"
               description="Add tenants by creating a lease"
-              action={<button className="btn-primary text-sm px-4 py-2">Add tenant</button>}
+              action={<button type="button" className="btn-primary text-sm px-4 py-2">Add tenant</button>}
             />
           ) : (
             <div className="space-y-1">
@@ -92,7 +90,6 @@ export function TenantsPage() {
           )}
         </Card>
 
-        {/* Detail panel */}
         {selected && (
           <div className="w-72 flex-shrink-0 space-y-3">
             <TenantDetail lease={selected} />
@@ -103,14 +100,15 @@ export function TenantsPage() {
   )
 }
 
-function TenantCard({ lease, isSelected, onClick }: {
-  lease: Lease; isSelected: boolean; onClick: () => void
-}) {
+function TenantCard({ lease, isSelected, onClick }) {
   const daysLeft = differenceInDays(new Date(lease.end_date), new Date())
   const isExpiringSoon = daysLeft >= 0 && daysLeft <= 60
 
   return (
     <div
+      role="button"
+      tabIndex={0}
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onClick() }}
       onClick={onClick}
       className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border ${
         isSelected ? 'border-brand-200 bg-brand-50/40' : 'border-transparent hover:bg-gray-50'
@@ -134,7 +132,7 @@ function TenantCard({ lease, isSelected, onClick }: {
   )
 }
 
-function TenantDetail({ lease }: { lease: Lease }) {
+function TenantDetail({ lease }) {
   return (
     <>
       <Card>
@@ -161,13 +159,13 @@ function TenantDetail({ lease }: { lease: Lease }) {
         <CardHeader title="Lease details" />
         <div className="space-y-2 text-sm">
           {[
-            { label: 'Start date',    val: format(new Date(lease.start_date), 'd MMM yyyy') },
-            { label: 'End date',      val: format(new Date(lease.end_date), 'd MMM yyyy') },
-            { label: 'Rent',          val: formatUGX(lease.rent_amount) + '/mo' },
-            { label: 'Deposit',       val: formatUGX(lease.deposit_amount) },
-            { label: 'Due day',       val: `${lease.due_day}${['st','nd','rd'][lease.due_day - 1] || 'th'} of month` },
-            { label: 'Grace period',  val: `${lease.grace_period_days} days` },
-            { label: 'Late fee',      val: `${lease.late_fee_percent}%` },
+            { label: 'Start date', val: format(new Date(lease.start_date), 'd MMM yyyy') },
+            { label: 'End date', val: format(new Date(lease.end_date), 'd MMM yyyy') },
+            { label: 'Rent', val: `${formatUGX(lease.rent_amount)}/mo` },
+            { label: 'Deposit', val: formatUGX(lease.deposit_amount) },
+            { label: 'Due day', val: `${lease.due_day}${['st', 'nd', 'rd'][lease.due_day - 1] || 'th'} of month` },
+            { label: 'Grace period', val: `${lease.grace_period_days} days` },
+            { label: 'Late fee', val: `${lease.late_fee_percent}%` },
           ].map(({ label, val }) => (
             <div key={label} className="flex justify-between">
               <span className="text-gray-400">{label}</span>
@@ -176,8 +174,8 @@ function TenantDetail({ lease }: { lease: Lease }) {
           ))}
         </div>
         <div className="mt-4 flex gap-2">
-          <button className="btn flex-1 text-xs">Renew</button>
-          <button className="btn flex-1 text-xs text-red-600 border-red-200 hover:bg-red-50">End lease</button>
+          <button type="button" className="btn flex-1 text-xs">Renew</button>
+          <button type="button" className="btn flex-1 text-xs text-red-600 border-red-200 hover:bg-red-50">End lease</button>
         </div>
       </Card>
     </>

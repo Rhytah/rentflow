@@ -1,26 +1,25 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
-import { Search, Filter, Download, Send, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Search, Download, Send, CheckCircle2, AlertCircle } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
-import { useProperties } from '@/hooks/useProperties'
+import { useProperties, useMyLease } from '@/hooks/useProperties'
 import { usePayments, usePaymentSummary, useRecordPayment, useMyPayments } from '@/hooks/usePayments'
 import { formatUGX, formatUGXShort, daysFromNow } from '@/lib/utils'
 import {
   MetricCard, Card, CardHeader, StatusPill, Avatar,
   Modal, PageLoader, EmptyState, ProgressBar,
 } from '@/components/shared'
-import type { Payment, PaymentMethod, PaymentStatus } from '@/types/database'
 import toast from 'react-hot-toast'
 
 const now = new Date()
 const MONTH = now.getMonth() + 1
-const YEAR  = now.getFullYear()
+const YEAR = now.getFullYear()
 
-const METHOD_LABELS: Record<PaymentMethod, string> = {
-  mtn_momo:      'MTN MoMo',
-  airtel_money:  'Airtel Money',
+const METHOD_LABELS = {
+  mtn_momo: 'MTN MoMo',
+  airtel_money: 'Airtel Money',
   bank_transfer: 'Bank Transfer',
-  cash:          'Cash',
+  cash: 'Cash',
 }
 
 export function PaymentsPage() {
@@ -28,14 +27,13 @@ export function PaymentsPage() {
   return profile?.role === 'tenant' ? <TenantPayments /> : <LandlordPayments />
 }
 
-// ── LANDLORD PAYMENTS ─────────────────────────────────────────
 function LandlordPayments() {
   const { profile } = useAuth()
   const { data: properties = [], isLoading: propsLoading } = useProperties(profile?.id)
-  const [selectedProperty, setSelectedProperty] = useState<string>('')
-  const [statusFilter, setStatusFilter] = useState<PaymentStatus | ''>('')
+  const [selectedProperty, setSelectedProperty] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
   const [search, setSearch] = useState('')
-  const [recordModal, setRecordModal] = useState<Payment | null>(null)
+  const [recordModal, setRecordModal] = useState(null)
 
   const propId = selectedProperty || properties[0]?.id
   const { data: payments = [], isLoading } = usePayments(propId, MONTH, YEAR)
@@ -51,23 +49,21 @@ function LandlordPayments() {
 
   return (
     <div className="p-6 space-y-5">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Payments</h1>
           <p className="text-sm text-gray-500 mt-0.5">{format(now, 'MMMM yyyy')} · Rent collection</p>
         </div>
         <div className="flex gap-2">
-          <button className="btn flex items-center gap-1.5 text-sm">
+          <button type="button" className="btn flex items-center gap-1.5 text-sm">
             <Download size={14} /> Export
           </button>
-          <button className="btn flex items-center gap-1.5 text-sm text-amber-700 border-amber-200 bg-amber-50 hover:bg-amber-100">
+          <button type="button" className="btn flex items-center gap-1.5 text-sm text-amber-700 border-amber-200 bg-amber-50 hover:bg-amber-100">
             <Send size={14} /> Send bulk reminders
           </button>
         </div>
       </div>
 
-      {/* Metrics */}
       <div className="grid grid-cols-4 gap-3">
         <MetricCard label="Expected" value={formatUGXShort(summary?.total_expected ?? 0)} sub={`${summary?.total ?? 0} payments`} />
         <MetricCard
@@ -89,7 +85,6 @@ function LandlordPayments() {
         />
       </div>
 
-      {/* Filters */}
       <Card>
         <div className="flex items-center gap-3 mb-4">
           <select
@@ -101,7 +96,7 @@ function LandlordPayments() {
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
           </select>
-          <select className="input w-36" value={statusFilter} onChange={e => setStatusFilter(e.target.value as any)}>
+          <select className="input w-36" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
             <option value="">All statuses</option>
             <option value="paid">Paid</option>
             <option value="overdue">Overdue</option>
@@ -124,7 +119,6 @@ function LandlordPayments() {
           </div>
         </div>
 
-        {/* Table */}
         {isLoading ? <PageLoader /> : filtered.length === 0 ? (
           <EmptyState title="No payments found" description="Try adjusting your filters" />
         ) : (
@@ -156,7 +150,6 @@ function LandlordPayments() {
         )}
       </Card>
 
-      {/* Record Payment Modal */}
       {recordModal && (
         <RecordPaymentModal
           payment={recordModal}
@@ -167,7 +160,7 @@ function LandlordPayments() {
   )
 }
 
-function PaymentRow({ payment, onRecord }: { payment: Payment; onRecord: () => void }) {
+function PaymentRow({ payment, onRecord }) {
   const days = daysFromNow(payment.due_date)
   const isPaid = payment.status === 'paid'
 
@@ -204,27 +197,26 @@ function PaymentRow({ payment, onRecord }: { payment: Payment; onRecord: () => v
       </td>
       <td className="py-3 text-right">
         {!isPaid && (
-          <button onClick={onRecord} className="btn text-xs px-2.5 py-1">
+          <button type="button" onClick={onRecord} className="btn text-xs px-2.5 py-1">
             Record
           </button>
         )}
         {isPaid && (
-          <button className="btn text-xs px-2.5 py-1">Receipt</button>
+          <button type="button" className="btn text-xs px-2.5 py-1">Receipt</button>
         )}
       </td>
     </tr>
   )
 }
 
-// ── RECORD PAYMENT MODAL ──────────────────────────────────────
-function RecordPaymentModal({ payment, onClose }: { payment: Payment; onClose: () => void }) {
+function RecordPaymentModal({ payment, onClose }) {
   const { mutateAsync, isPending } = useRecordPayment()
   const [amount, setAmount] = useState(String(payment.amount_due + payment.late_fee))
-  const [method, setMethod] = useState<PaymentMethod>('mtn_momo')
+  const [method, setMethod] = useState('mtn_momo')
   const [reference, setReference] = useState('')
   const [notes, setNotes] = useState('')
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e) {
     e.preventDefault()
     try {
       await mutateAsync({
@@ -281,7 +273,7 @@ function RecordPaymentModal({ payment, onClose }: { payment: Payment; onClose: (
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1.5">Payment method</label>
           <div className="grid grid-cols-2 gap-2">
-            {(Object.entries(METHOD_LABELS) as [PaymentMethod, string][]).map(([val, label]) => (
+            {Object.entries(METHOD_LABELS).map(([val, label]) => (
               <button
                 key={val}
                 type="button"
@@ -319,13 +311,11 @@ function RecordPaymentModal({ payment, onClose }: { payment: Payment; onClose: (
   )
 }
 
-// ── TENANT PAYMENTS ───────────────────────────────────────────
 function TenantPayments() {
   const { profile } = useAuth()
   const { data: payments = [], isLoading } = useMyPayments(profile?.id)
-  const { useMyLease } = require('@/hooks/useProperties')
   const { data: lease } = useMyLease(profile?.id)
-  const [payModal, setPayModal] = useState<Payment | null>(null)
+  const [payModal, setPayModal] = useState(null)
 
   const current = payments.find(p =>
     p.period_month === MONTH && p.period_year === YEAR
@@ -352,7 +342,6 @@ function TenantPayments() {
         />
       </div>
 
-      {/* Pay now card */}
       {current && current.status !== 'paid' && (
         <Card className="border-brand-100 bg-brand-50/30">
           <div className="flex items-center justify-between">
@@ -371,6 +360,7 @@ function TenantPayments() {
               </p>
             </div>
             <button
+              type="button"
               onClick={() => setPayModal(current)}
               className="btn-primary px-6 py-2.5"
             >
@@ -380,7 +370,6 @@ function TenantPayments() {
         </Card>
       )}
 
-      {/* Payment history */}
       <Card>
         <CardHeader title="Payment history" />
         {payments.length === 0 ? (
@@ -415,10 +404,10 @@ function TenantPayments() {
                   <td className="py-3 text-gray-400 text-xs font-mono">{p.reference ?? '—'}</td>
                   <td className="py-3 text-right">
                     {p.status === 'paid' && (
-                      <button className="btn text-xs px-2 py-1">Receipt</button>
+                      <button type="button" className="btn text-xs px-2 py-1">Receipt</button>
                     )}
                     {p.status !== 'paid' && (
-                      <button onClick={() => setPayModal(p)} className="btn-primary text-xs px-2 py-1">
+                      <button type="button" onClick={() => setPayModal(p)} className="btn-primary text-xs px-2 py-1">
                         Pay
                       </button>
                     )}
@@ -437,15 +426,14 @@ function TenantPayments() {
   )
 }
 
-// ── TENANT PAY MODAL ──────────────────────────────────────────
-function TenantPayModal({ payment, onClose }: { payment: Payment; onClose: () => void }) {
+function TenantPayModal({ payment, onClose }) {
   const { mutateAsync, isPending } = useRecordPayment()
-  const [method, setMethod] = useState<PaymentMethod>('mtn_momo')
+  const [method, setMethod] = useState('mtn_momo')
   const [phone, setPhone] = useState('')
 
   const total = payment.amount_due + payment.late_fee
 
-  async function handlePay(e: React.FormEvent) {
+  async function handlePay(e) {
     e.preventDefault()
     try {
       await mutateAsync({
@@ -474,7 +462,7 @@ function TenantPayModal({ payment, onClose }: { payment: Payment; onClose: () =>
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-2">Select payment method</label>
           <div className="space-y-2">
-            {(Object.entries(METHOD_LABELS) as [PaymentMethod, string][]).map(([val, label]) => (
+            {Object.entries(METHOD_LABELS).map(([val, label]) => (
               <button
                 key={val}
                 type="button"

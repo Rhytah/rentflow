@@ -1,8 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { Payment, PaymentMethod, PaymentStatus } from '@/types/database'
 
-export function usePayments(propertyId?: string, month?: number, year?: number) {
+export function usePayments(propertyId, month, year) {
   return useQuery({
     queryKey: ['payments', propertyId, month, year],
     queryFn: async () => {
@@ -17,17 +16,17 @@ export function usePayments(propertyId?: string, month?: number, year?: number) 
         .order('due_date', { ascending: false })
 
       if (propertyId) q = q.eq('property_id', propertyId)
-      if (month)      q = q.eq('period_month', month)
-      if (year)       q = q.eq('period_year', year)
+      if (month) q = q.eq('period_month', month)
+      if (year) q = q.eq('period_year', year)
 
       const { data, error } = await q
       if (error) throw error
-      return data as Payment[]
+      return data
     },
   })
 }
 
-export function useMyPayments(tenantId?: string) {
+export function useMyPayments(tenantId) {
   return useQuery({
     queryKey: ['my-payments', tenantId],
     enabled: !!tenantId,
@@ -35,17 +34,17 @@ export function useMyPayments(tenantId?: string) {
       const { data, error } = await supabase
         .from('payments')
         .select(`*, unit:units(unit_number), property:properties(name)`)
-        .eq('tenant_id', tenantId!)
+        .eq('tenant_id', tenantId)
         .order('period_year', { ascending: false })
         .order('period_month', { ascending: false })
 
       if (error) throw error
-      return data as Payment[]
+      return data
     },
   })
 }
 
-export function usePaymentSummary(propertyId: string, month: number, year: number) {
+export function usePaymentSummary(propertyId, month, year) {
   return useQuery({
     queryKey: ['payment-summary', propertyId, month, year],
     queryFn: async () => {
@@ -58,12 +57,12 @@ export function usePaymentSummary(propertyId: string, month: number, year: numbe
 
       if (error) throw error
 
-      const total_expected  = data.reduce((s, p) => s + Number(p.amount_due), 0)
+      const total_expected = data.reduce((s, p) => s + Number(p.amount_due), 0)
       const total_collected = data.reduce((s, p) => s + Number(p.amount), 0)
       const total_late_fees = data.reduce((s, p) => s + Number(p.late_fee), 0)
-      const paid_count      = data.filter(p => p.status === 'paid').length
-      const overdue_count   = data.filter(p => p.status === 'overdue').length
-      const partial_count   = data.filter(p => p.status === 'partial').length
+      const paid_count = data.filter(p => p.status === 'paid').length
+      const overdue_count = data.filter(p => p.status === 'overdue').length
+      const partial_count = data.filter(p => p.status === 'partial').length
       const collection_rate = total_expected > 0
         ? Math.round((total_collected / total_expected) * 100) : 0
 
@@ -76,24 +75,15 @@ export function usePaymentSummary(propertyId: string, month: number, year: numbe
   })
 }
 
-interface RecordPaymentInput {
-  paymentId: string
-  amount: number
-  method: PaymentMethod
-  reference?: string
-  notes?: string
-}
-
 export function useRecordPayment() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ paymentId, amount, method, reference, notes }: RecordPaymentInput) => {
-      // Fetch payment to compare amount
+    mutationFn: async ({ paymentId, amount, method, reference, notes }) => {
       const { data: existing } = await supabase
         .from('payments').select('amount_due, late_fee').eq('id', paymentId).single()
 
       const totalDue = Number(existing?.amount_due ?? 0) + Number(existing?.late_fee ?? 0)
-      const newStatus: PaymentStatus = amount >= totalDue ? 'paid' : 'partial'
+      const newStatus = amount >= totalDue ? 'paid' : 'partial'
 
       const { data, error } = await supabase
         .from('payments')
@@ -119,7 +109,7 @@ export function useRecordPayment() {
 export function useUpdatePaymentStatus() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: PaymentStatus }) => {
+    mutationFn: async ({ id, status }) => {
       const { error } = await supabase.from('payments').update({ status }).eq('id', id)
       if (error) throw error
     },
