@@ -26,22 +26,22 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen min-h-[100dvh] bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-4 py-8 sm:py-12">
+      <div className="w-full max-w-sm min-w-0">
         <div className="flex items-center gap-2.5 justify-center mb-8">
           <div className="w-9 h-9 bg-brand-600 rounded-xl flex items-center justify-center">
             <Building2 size={18} className="text-white" />
           </div>
-          <span className="text-2xl font-semibold text-gray-900">RentFlow</span>
+          <span className="text-2xl font-semibold text-gray-900 dark:text-gray-100">RentFlow</span>
         </div>
 
         <div className="card">
-          <h1 className="text-lg font-medium text-gray-900 mb-1">Welcome back</h1>
-          <p className="text-sm text-gray-500 mb-6">Sign in to your account</p>
+          <h1 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">Welcome back</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-500 mb-6">Sign in to your account</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1.5">Email</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-500 mb-1.5">Email</label>
               <input
                 type="email"
                 className="input"
@@ -52,7 +52,7 @@ export function LoginPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1.5">Password</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-500 mb-1.5">Password</label>
               <div className="relative">
                 <input
                   type={showPw ? 'text' : 'password'}
@@ -64,7 +64,7 @@ export function LoginPage() {
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                   onClick={() => setShowPw(v => !v)}
                 >
                   {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
@@ -81,9 +81,9 @@ export function LoginPage() {
             </button>
           </form>
 
-          <p className="text-sm text-center text-gray-500 mt-5">
+          <p className="text-sm text-center text-gray-500 dark:text-gray-500 mt-5">
             No account?{' '}
-            <Link to="/signup" className="text-brand-600 hover:underline font-medium">Sign up</Link>
+            <Link to="/signup" className="text-brand-600 dark:text-brand-400 hover:underline font-medium">Sign up</Link>
           </p>
         </div>
       </div>

@@ -3,12 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <script>
+      (function () {
+        try {
+          var k = 'rentflow-theme'
+          var t = localStorage.getItem(k)
+          var r = document.documentElement
+          if (t === 'dark') r.classList.add('dark')
+          else if (t === 'light') r.classList.remove('dark')
+          else if (window.matchMedia('(prefers-color-scheme: dark)').matches) r.classList.add('dark')
+        } catch (e) {}
+      })()
+    </script>
     <title>RentFlow</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
-    <script type="module" crossorigin src="/assets/index-DyCidsJJ.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-CNHmZJRK.css">
+    <script type="module" crossorigin src="/assets/index-BJao56I2.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-CSP2M1pq.css">
   </head>
   <body>
     <div id="root"></div>

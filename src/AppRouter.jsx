@@ -13,7 +13,7 @@ import { Spinner } from '@/components/shared'
 function RequireAuth({ children }) {
   const { user, loading } = useAuth()
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
       <Spinner className="w-8 h-8" />
     </div>
   )
@@ -49,9 +49,9 @@ export function AppRouter() {
 
 function ComingSoon({ title }) {
   return (
-    <div className="p-6">
-      <h1 className="text-xl font-semibold text-gray-900 mb-2">{title}</h1>
-      <p className="text-gray-500 text-sm">This module is coming soon.</p>
+    <div className="p-4 sm:p-6 max-w-2xl">
+      <h1 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">{title}</h1>
+      <p className="text-gray-500 dark:text-gray-500 text-sm">This module is coming soon.</p>
     </div>
   )
 }

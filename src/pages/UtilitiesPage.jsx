@@ -17,12 +17,12 @@ const UTILITY_ICONS = {
 }
 
 const UTILITY_COLORS = {
-  electricity: 'bg-amber-50 text-amber-600',
-  water: 'bg-blue-50 text-blue-600',
-  internet: 'bg-purple-50 text-purple-600',
-  garbage: 'bg-green-50 text-green-600',
-  security: 'bg-gray-50 text-gray-600',
-  other: 'bg-gray-50 text-gray-500',
+  electricity: 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400',
+  water: 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400',
+  internet: 'bg-purple-50 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400',
+  garbage: 'bg-green-50 text-green-600 dark:bg-green-950/40 dark:text-green-400',
+  security: 'bg-gray-50 text-gray-600 dark:bg-gray-800/80 dark:text-gray-400',
+  other: 'bg-gray-50 text-gray-500 dark:bg-gray-800/80 dark:text-gray-400',
 }
 
 const now = new Date()
@@ -55,27 +55,27 @@ export function UtilitiesPage() {
   }
 
   return (
-    <div className="p-6 space-y-5">
-      <div className="flex items-center justify-between">
+    <div className="p-4 sm:p-6 space-y-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Utilities</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{format(now, 'MMMM yyyy')} · Bills & services</p>
+          <h1 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100">Utilities</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-500 mt-0.5">{format(now, 'MMMM yyyy')} · Bills & services</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <select
-            className="input w-44"
+            className="input w-full sm:w-44"
             value={selectedProperty}
             onChange={e => setSelectedProperty(e.target.value)}
           >
             {properties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
-          <button type="button" onClick={() => setAddModal(true)} className="btn-primary flex items-center gap-1.5 text-sm">
+          <button type="button" onClick={() => setAddModal(true)} className="btn-primary inline-flex items-center justify-center gap-1.5 text-sm w-full sm:w-auto">
             <Plus size={14} /> Add bill
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <MetricCard label="Total bills this month" value={String(bills.length)} />
         <MetricCard label="Amount due" value={formatUGXShort(totalDue)} subColor={totalDue > 0 ? 'amber' : undefined} />
         <MetricCard label="Paid" value={formatUGXShort(totalPaid)} subColor="green" />
@@ -93,7 +93,7 @@ export function UtilitiesPage() {
           }
         />
       ) : (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {bills.map(bill => (
             <UtilityCard key={bill.id} bill={bill} onMarkPaid={() => handleMarkPaid(bill.id)} />
           ))}
@@ -121,8 +121,8 @@ export function UtilitiesPage() {
                   </div>
                   <div className="flex-1">
                     <div className="flex justify-between text-sm mb-1">
-                      <span className="capitalize text-gray-700">{type}</span>
-                      <span className="font-medium text-gray-900">{formatUGX(total)}</span>
+                      <span className="capitalize text-gray-700 dark:text-gray-300 dark:text-gray-600">{type}</span>
+                      <span className="font-medium text-gray-900 dark:text-gray-100">{formatUGX(total)}</span>
                     </div>
                     <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                       <div
@@ -131,7 +131,7 @@ export function UtilitiesPage() {
                       />
                     </div>
                   </div>
-                  <span className="text-xs text-gray-400 w-8 text-right">{count}</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500 w-8 text-right">{count}</span>
                 </div>
               )
             })}
@@ -156,10 +156,10 @@ function UtilityCard({ bill, onMarkPaid }) {
         </div>
         <StatusPill status={bill.status} />
       </div>
-      <p className="font-medium text-gray-800 capitalize">{bill.type}</p>
-      <p className="text-xs text-gray-400 mb-3">{bill.provider}</p>
-      <p className="text-xl font-semibold text-gray-900 mb-1">{formatUGX(bill.amount)}</p>
-      <p className="text-xs text-gray-400 mb-4">
+      <p className="font-medium text-gray-800 dark:text-gray-200 capitalize">{bill.type}</p>
+      <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">{bill.provider}</p>
+      <p className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-1">{formatUGX(bill.amount)}</p>
+      <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
         Due {format(new Date(bill.due_date), 'd MMM yyyy')}
         {bill.unit && ` · Unit ${bill.unit.unit_number}`}
         {!bill.unit && ' · Whole building'}
@@ -168,7 +168,7 @@ function UtilityCard({ bill, onMarkPaid }) {
         <button type="button" onClick={onMarkPaid} className="btn w-full text-sm">Mark as paid</button>
       )}
       {isPaid && bill.paid_at && (
-        <p className="text-xs text-green-600 text-center">
+        <p className="text-xs text-green-600 dark:text-green-400 text-center">
           Paid {format(new Date(bill.paid_at), 'd MMM yyyy')}
         </p>
       )}
@@ -215,7 +215,7 @@ function AddBillModal({ propId, onClose }) {
     <Modal open title="Add utility bill" onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1.5">Utility type</label>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-500 mb-1.5">Utility type</label>
           <select className="input" value={form.type} onChange={e => set('type', e.target.value)}>
             {Object.keys(UTILITY_ICONS).map(t => (
               <option key={t} value={t} className="capitalize">{t}</option>
@@ -223,20 +223,20 @@ function AddBillModal({ propId, onClose }) {
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1.5">Provider</label>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-500 mb-1.5">Provider</label>
           <input className="input" placeholder="e.g. UMEME, NWSC" value={form.provider} onChange={e => set('provider', e.target.value)} required />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1.5">Amount (UGX)</label>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-500 mb-1.5">Amount (UGX)</label>
           <input type="number" className="input" placeholder="0" value={form.amount} onChange={e => set('amount', e.target.value)} required min={1} />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1.5">Due date</label>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-500 mb-1.5">Due date</label>
           <input type="date" className="input" value={form.due_date} onChange={e => set('due_date', e.target.value)} required />
         </div>
         <div className="flex items-center gap-2">
           <input type="checkbox" id="split" checked={form.split_among_units} onChange={e => set('split_among_units', e.target.checked)} className="rounded" />
-          <label htmlFor="split" className="text-sm text-gray-600">Split among units</label>
+          <label htmlFor="split" className="text-sm text-gray-600 dark:text-gray-500">Split among units</label>
         </div>
         <div className="flex gap-2 pt-1">
           <button type="button" onClick={onClose} className="btn flex-1">Cancel</button>
