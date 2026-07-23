@@ -70,7 +70,7 @@ export function Sidebar({ mobileNavOpen, onMobileClose }) {
           <div className="w-7 h-7 bg-brand-600 rounded-lg flex items-center justify-center flex-shrink-0">
             <Building2 size={14} className="text-white" />
           </div>
-          <span className="text-[15px] font-semibold text-gray-900 dark:text-gray-100 truncate">RentFlow</span>
+          <span className="text-[15px] font-semibold text-gray-900 dark:text-gray-100 truncate">KodiKazi</span>
         </div>
         <button
           type="button"

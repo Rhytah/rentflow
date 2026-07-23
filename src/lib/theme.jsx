@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 
-const STORAGE_KEY = 'rentflow-theme'
+const STORAGE_KEY = 'kodikazi-theme'
 
 function readStored() {
   try {

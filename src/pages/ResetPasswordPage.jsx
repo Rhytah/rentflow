@@ -17,7 +17,7 @@ export function ResetPasswordPage() {
     try {
       await updatePassword(password)
       toast.success('Password updated')
-      navigate('/')
+      navigate('/app')
     } catch (err) {
       toast.error(err?.message ?? 'Failed to update password')
     } finally {
@@ -32,7 +32,7 @@ export function ResetPasswordPage() {
           <div className="w-9 h-9 bg-brand-600 rounded-xl flex items-center justify-center">
             <Building2 size={18} className="text-white" />
           </div>
-          <span className="text-2xl font-semibold text-gray-900 dark:text-gray-100">RentFlow</span>
+          <span className="text-2xl font-semibold text-gray-900 dark:text-gray-100">KodiKazi</span>
         </div>
 
         <div className="card">

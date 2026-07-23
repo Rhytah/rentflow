@@ -4,6 +4,7 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { LoginPage } from '@/pages/LoginPage'
 import { SignUpPage } from '@/pages/SignUpPage'
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage'
+import { LandingPage } from '@/pages/LandingPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { PaymentsPage } from '@/pages/PaymentsPage'
 import { TenantsPage } from '@/pages/TenantsPage'
@@ -28,11 +29,12 @@ function RequireAuth({ children }) {
 export function AppRouter() {
   return (
     <Routes>
+      <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignUpPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route
-        path="/"
+        path="/app"
         element={
           <RequireAuth>
             <AppLayout />

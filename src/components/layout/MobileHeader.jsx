@@ -16,7 +16,7 @@ export function MobileHeader({ onOpenMenu }) {
         <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center flex-shrink-0">
           <Building2 size={16} className="text-white" />
         </div>
-        <span className="font-semibold text-gray-900 dark:text-gray-100 truncate">RentFlow</span>
+        <span className="font-semibold text-gray-900 dark:text-gray-100 truncate">KodiKazi</span>
       </div>
       <ThemeToggle variant="icon" />
     </header>

@@ -41,12 +41,12 @@ export function SignUpPage() {
           <div className="w-9 h-9 bg-brand-600 rounded-xl flex items-center justify-center">
             <Building2 size={18} className="text-white" />
           </div>
-          <span className="text-2xl font-semibold text-gray-900 dark:text-gray-100">RentFlow</span>
+          <span className="text-2xl font-semibold text-gray-900 dark:text-gray-100">KodiKazi</span>
         </div>
 
         <div className="card">
           <h1 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">Create your account</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-500 mb-6">Get started with RentFlow</p>
+          <p className="text-sm text-gray-500 dark:text-gray-500 mb-6">Get started with KodiKazi</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>

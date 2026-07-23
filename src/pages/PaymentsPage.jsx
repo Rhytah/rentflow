@@ -557,6 +557,7 @@ function receiptHTML({ payment, propertyName, tenantName, unitNumber }) {
     ['Method', payment.method ? METHOD_LABELS[payment.method] : '—'],
     ['Paid on', payment.paid_at ? format(new Date(payment.paid_at), 'd MMM yyyy, HH:mm') : '—'],
   ]
+
   return `<!doctype html><html><head><title>Receipt</title><style>
     body{font-family:system-ui,sans-serif;padding:24px;color:#111}
     h1{font-size:16px;margin:0 0 4px}
@@ -568,8 +569,10 @@ function receiptHTML({ payment, propertyName, tenantName, unitNumber }) {
     .total{margin-top:16px;text-align:right;font-size:18px;font-weight:700}
   </style></head><body>
     <h1>Payment Receipt</h1>
-    <p class="sub">RentFlow</p>
-    <table>${rows.map(([k, v]) => `<tr><td>${escapeHtml(k)}</td><td>${escapeHtml(v)}</td></tr>`).join('')}</table>
+    <p class="sub">KodiKazi</p>
+    <table>
+      ${rows.map(([k, v]) => `<tr><td>${escapeHtml(k)}</td><td>${escapeHtml(v)}</td></tr>`).join('')}
+    </table>
     <p class="total">${escapeHtml(formatUGX(payment.amount))}</p>
   </body></html>`
 }
@@ -580,12 +583,21 @@ function ReceiptModal({ payment, property, tenantName, onClose }) {
   const unitNumber = payment.unit?.unit_number
 
   function handlePrint() {
-    const w = window.open('', '_blank', 'width=380,height=600')
-    if (!w) { toast.error('Allow pop-ups to print the receipt'); return }
-    w.document.write(receiptHTML({ payment, propertyName: resolvedProperty, tenantName: resolvedTenant, unitNumber }))
-    w.document.close()
-    w.focus()
-    w.print()
+    const win = window.open('', '_blank', 'width=380,height=600')
+    if (!win) {
+      toast.error('Allow pop-ups to print the receipt')
+      return
+    }
+
+    win.document.write(receiptHTML({
+      payment,
+      propertyName: resolvedProperty,
+      tenantName: resolvedTenant,
+      unitNumber,
+    }))
+    win.document.close()
+    win.focus()
+    win.print()
   }
 
   return (

@@ -1,4 +1,4 @@
-# RentFlow
+# KodiKazi
 
 Rent and utilities management for landlords, property managers, tenants, and homeowners.
 
@@ -131,4 +131,3 @@ where status in ('pending', 'upcoming')
 
 Then trigger an Edge Function to send SMS via Africa's Talking to all tenants
 whose payment was just marked overdue.
-# rentflow
