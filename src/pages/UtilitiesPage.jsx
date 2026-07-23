@@ -2,7 +2,10 @@ import { useState } from 'react'
 import { format } from 'date-fns'
 import { Plus, Zap, Droplets, Wifi, Trash2, Shield, MoreHorizontal } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
-import { useProperties, useUtilityBills, useMarkUtilityPaid, useCreateUtilityBill } from '@/hooks/useProperties'
+import {
+  useProperties, useUtilityBills, useMarkUtilityPaid,
+  useCreateUtilityBill, useCreateSplitUtilityBills, useUnits,
+} from '@/hooks/useProperties'
 import { formatUGX, formatUGXShort } from '@/lib/utils'
 import { Card, CardHeader, MetricCard, StatusPill, PageLoader, EmptyState, Modal } from '@/components/shared'
 import toast from 'react-hot-toast'
@@ -177,7 +180,11 @@ function UtilityCard({ bill, onMarkPaid }) {
 }
 
 function AddBillModal({ propId, onClose }) {
-  const { mutateAsync, isPending } = useCreateUtilityBill()
+  const { mutateAsync: createBill, isPending: creatingBill } = useCreateUtilityBill()
+  const { mutateAsync: createSplitBills, isPending: creatingSplit } = useCreateSplitUtilityBills()
+  const { data: units = [] } = useUnits(propId)
+  const occupiedUnits = units.filter(u => u.is_occupied)
+  const isPending = creatingBill || creatingSplit
   const [form, setForm] = useState({
     type: 'electricity',
     provider: '',
@@ -192,19 +199,26 @@ function AddBillModal({ propId, onClose }) {
 
   async function handleSubmit(e) {
     e.preventDefault()
+    const base = {
+      property_id: propId,
+      type: form.type,
+      provider: form.provider,
+      period_month: MONTH,
+      period_year: YEAR,
+      due_date: form.due_date,
+      status: 'upcoming',
+    }
     try {
-      await mutateAsync({
-        property_id: propId,
-        type: form.type,
-        provider: form.provider,
-        amount: Number(form.amount),
-        period_month: MONTH,
-        period_year: YEAR,
-        due_date: form.due_date,
-        status: 'upcoming',
-        split_among_units: form.split_among_units,
-      })
-      toast.success('Bill added')
+      if (form.split_among_units && occupiedUnits.length > 0) {
+        const share = Math.round(Number(form.amount) / occupiedUnits.length)
+        await createSplitBills(
+          occupiedUnits.map(u => ({ ...base, unit_id: u.id, amount: share, split_among_units: true }))
+        )
+        toast.success(`Bill split across ${occupiedUnits.length} units`)
+      } else {
+        await createBill({ ...base, amount: Number(form.amount), split_among_units: false })
+        toast.success('Bill added')
+      }
       onClose()
     } catch {
       toast.error('Failed to add bill')
@@ -234,9 +248,26 @@ function AddBillModal({ propId, onClose }) {
           <label className="block text-xs font-medium text-gray-600 dark:text-gray-500 mb-1.5">Due date</label>
           <input type="date" className="input" value={form.due_date} onChange={e => set('due_date', e.target.value)} required />
         </div>
-        <div className="flex items-center gap-2">
-          <input type="checkbox" id="split" checked={form.split_among_units} onChange={e => set('split_among_units', e.target.checked)} className="rounded" />
-          <label htmlFor="split" className="text-sm text-gray-600 dark:text-gray-500">Split among units</label>
+        <div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox" id="split" checked={form.split_among_units}
+              onChange={e => set('split_among_units', e.target.checked)}
+              disabled={occupiedUnits.length === 0}
+              className="rounded"
+            />
+            <label htmlFor="split" className="text-sm text-gray-600 dark:text-gray-500">
+              Split among units {occupiedUnits.length > 0 && `(${occupiedUnits.length} occupied)`}
+            </label>
+          </div>
+          {occupiedUnits.length === 0 && (
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">No occupied units on this property yet</p>
+          )}
+          {form.split_among_units && occupiedUnits.length > 0 && Number(form.amount) > 0 && (
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+              {formatUGX(Math.round(Number(form.amount) / occupiedUnits.length))} per unit
+            </p>
+          )}
         </div>
         <div className="flex gap-2 pt-1">
           <button type="button" onClick={onClose} className="btn flex-1">Cancel</button>

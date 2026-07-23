@@ -3,7 +3,7 @@ import { format } from 'date-fns'
 import { ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { useProperties, useMyLease } from '@/hooks/useProperties'
-import { usePayments, usePaymentSummary, useMyPayments } from '@/hooks/usePayments'
+import { usePayments, usePaymentSummary, useMyPayments, useRevenueHistory } from '@/hooks/usePayments'
 import { formatUGX, formatUGXShort } from '@/lib/utils'
 import {
   MetricCard, Card, CardHeader, StatusPill, Avatar,
@@ -38,19 +38,12 @@ function LandlordDashboard() {
   const { data: payments = [] } = usePayments(
     primaryProperty?.id, MONTH, YEAR
   )
+  const { data: chartData = [] } = useRevenueHistory(primaryProperty?.id, 5)
 
   if (propsLoading || sumLoading) return <PageLoader />
 
   const overdue = payments.filter(p => p.status === 'overdue')
   const recentPaid = payments.filter(p => p.status === 'paid').slice(0, 5)
-
-  const chartData = [
-    { name: 'Nov', amount: 11_200_000 },
-    { name: 'Dec', amount: 11_800_000 },
-    { name: 'Jan', amount: 13_100_000 },
-    { name: 'Feb', amount: 12_600_000 },
-    { name: 'Mar', amount: summary?.total_collected ?? 0 },
-  ]
 
   return (
     <div className="p-4 sm:p-6 space-y-5 sm:space-y-6">

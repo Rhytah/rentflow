@@ -3,11 +3,15 @@ import { useAuth } from '@/lib/auth'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { LoginPage } from '@/pages/LoginPage'
 import { SignUpPage } from '@/pages/SignUpPage'
+import { ResetPasswordPage } from '@/pages/ResetPasswordPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { PaymentsPage } from '@/pages/PaymentsPage'
 import { TenantsPage } from '@/pages/TenantsPage'
 import { UtilitiesPage } from '@/pages/UtilitiesPage'
 import { PropertiesPage } from '@/pages/PropertiesPage'
+import { LeasesPage } from '@/pages/LeasesPage'
+import { SettingsPage } from '@/pages/SettingsPage'
+import { MaintenancePage } from '@/pages/MaintenancePage'
 import { Spinner } from '@/components/shared'
 
 function RequireAuth({ children }) {
@@ -26,6 +30,7 @@ export function AppRouter() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignUpPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route
         path="/"
         element={
@@ -39,19 +44,10 @@ export function AppRouter() {
         <Route path="tenants" element={<TenantsPage />} />
         <Route path="utilities" element={<UtilitiesPage />} />
         <Route path="properties" element={<PropertiesPage />} />
-        <Route path="maintenance" element={<ComingSoon title="Maintenance" />} />
-        <Route path="leases" element={<ComingSoon title="Leases" />} />
-        <Route path="settings" element={<ComingSoon title="Settings" />} />
+        <Route path="maintenance" element={<MaintenancePage />} />
+        <Route path="leases" element={<LeasesPage />} />
+        <Route path="settings" element={<SettingsPage />} />
       </Route>
     </Routes>
-  )
-}
-
-function ComingSoon({ title }) {
-  return (
-    <div className="p-4 sm:p-6 max-w-2xl">
-      <h1 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">{title}</h1>
-      <p className="text-gray-500 dark:text-gray-500 text-sm">This module is coming soon.</p>
-    </div>
   )
 }

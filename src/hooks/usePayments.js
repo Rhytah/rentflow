@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { subMonths, format } from 'date-fns'
 import { supabase } from '@/lib/supabase'
 
 export function usePayments(propertyId, month, year) {
@@ -71,6 +72,53 @@ export function usePaymentSummary(propertyId, month, year) {
         paid_count, overdue_count, partial_count,
         collection_rate, total: data.length,
       }
+    },
+  })
+}
+
+export function useRevenueHistory(propertyId, monthsBack = 5) {
+  return useQuery({
+    queryKey: ['revenue-history', propertyId, monthsBack],
+    enabled: !!propertyId,
+    queryFn: async () => {
+      const periods = Array.from({ length: monthsBack }, (_, i) => {
+        const d = subMonths(new Date(), monthsBack - 1 - i)
+        return { month: d.getMonth() + 1, year: d.getFullYear(), label: format(d, 'MMM') }
+      })
+      const earliest = periods[0]
+
+      const { data, error } = await supabase
+        .from('payments')
+        .select('amount, period_month, period_year')
+        .eq('property_id', propertyId)
+        .or(`period_year.gt.${earliest.year},and(period_year.eq.${earliest.year},period_month.gte.${earliest.month})`)
+
+      if (error) throw error
+
+      return periods.map(({ month, year, label }) => ({
+        name: label,
+        amount: data
+          .filter(p => p.period_month === month && p.period_year === year)
+          .reduce((s, p) => s + Number(p.amount), 0),
+      }))
+    },
+  })
+}
+
+export function useOverdueCount(propertyIds = [], month, year) {
+  return useQuery({
+    queryKey: ['overdue-count', propertyIds, month, year],
+    enabled: propertyIds.length > 0,
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('payments')
+        .select('id', { count: 'exact', head: true })
+        .in('property_id', propertyIds)
+        .eq('status', 'overdue')
+        .eq('period_month', month)
+        .eq('period_year', year)
+      if (error) throw error
+      return count ?? 0
     },
   })
 }

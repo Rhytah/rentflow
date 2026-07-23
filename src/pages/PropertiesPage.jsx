@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Building2, Plus, MapPin, Home } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
-import { useProperties, useUnits, useCreateProperty } from '@/hooks/useProperties'
+import { useProperties, useUnits, useCreateProperty, useCreateUnit } from '@/hooks/useProperties'
 import { formatUGXShort } from '@/lib/utils'
 import { Card, CardHeader, MetricCard, PageLoader, EmptyState, Modal, ProgressBar } from '@/components/shared'
 import toast from 'react-hot-toast'
@@ -60,8 +60,10 @@ export function PropertiesPage() {
 }
 
 function PropertyCard({ property, isSelected, onClick }) {
-  const occupiedUnits = Math.floor(property.total_units * 0.875)
-  const occupancyPct = Math.round((occupiedUnits / property.total_units) * 100)
+  const { data: units = [] } = useUnits(property.id)
+  const totalUnits = units.length || property.total_units
+  const occupiedUnits = units.length ? units.filter(u => u.is_occupied).length : 0
+  const occupancyPct = totalUnits > 0 ? Math.round((occupiedUnits / totalUnits) * 100) : 0
 
   return (
     <Card
@@ -82,7 +84,7 @@ function PropertyCard({ property, isSelected, onClick }) {
         <span className="line-clamp-2">{property.address}, {property.city}</span>
       </div>
       <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-500 mb-3">
-        <span className="flex items-center gap-1"><Home size={11} /> {property.total_units} units</span>
+        <span className="flex items-center gap-1"><Home size={11} /> {totalUnits} units</span>
         <span>{occupiedUnits} occupied</span>
       </div>
       <ProgressBar pct={occupancyPct} color={occupancyPct >= 90 ? 'green' : occupancyPct >= 70 ? 'brand' : 'amber'} />
@@ -92,12 +94,24 @@ function PropertyCard({ property, isSelected, onClick }) {
 
 function PropertyDetail({ property }) {
   const { data: units = [], isLoading } = useUnits(property.id)
+  const [addUnitModal, setAddUnitModal] = useState(false)
 
   return (
     <Card>
-      <CardHeader title={`${property.name} — Units`} />
+      <CardHeader
+        title={`${property.name} — Units`}
+        action={
+          <button type="button" onClick={() => setAddUnitModal(true)} className="btn text-xs px-2.5 py-1 inline-flex items-center gap-1">
+            <Plus size={12} /> Add unit
+          </button>
+        }
+      />
       {isLoading ? <PageLoader /> : units.length === 0 ? (
-        <EmptyState title="No units yet" description="Add units to this property" />
+        <EmptyState
+          title="No units yet"
+          description="Add units to this property"
+          action={<button type="button" onClick={() => setAddUnitModal(true)} className="btn-primary text-sm px-4 py-2">Add unit</button>}
+        />
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2">
           {units.map(unit => (
@@ -116,7 +130,61 @@ function PropertyDetail({ property }) {
           ))}
         </div>
       )}
+
+      {addUnitModal && <AddUnitModal propertyId={property.id} onClose={() => setAddUnitModal(false)} />}
     </Card>
+  )
+}
+
+function AddUnitModal({ propertyId, onClose }) {
+  const { mutateAsync, isPending } = useCreateUnit()
+  const [form, setForm] = useState({ unit_number: '', floor: '', bedrooms: 1, rent_amount: '' })
+  function set(key, val) { setForm(f => ({ ...f, [key]: val })) }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    try {
+      await mutateAsync({
+        property_id: propertyId,
+        unit_number: form.unit_number,
+        floor: form.floor ? Number(form.floor) : null,
+        bedrooms: Number(form.bedrooms),
+        rent_amount: Number(form.rent_amount),
+      })
+      toast.success('Unit added')
+      onClose()
+    } catch { toast.error('Failed to add unit') }
+  }
+
+  return (
+    <Modal open title="Add unit" onClose={onClose}>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-500 mb-1.5">Unit number</label>
+          <input className="input" placeholder="e.g. A1" value={form.unit_number} onChange={e => set('unit_number', e.target.value)} required />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-500 mb-1.5">Floor</label>
+            <input type="number" className="input" placeholder="e.g. 1" value={form.floor} onChange={e => set('floor', e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-500 mb-1.5">Bedrooms</label>
+            <input type="number" className="input" min={0} value={form.bedrooms} onChange={e => set('bedrooms', e.target.value)} required />
+          </div>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-500 mb-1.5">Rent (UGX/mo)</label>
+          <input type="number" className="input" min={1} value={form.rent_amount} onChange={e => set('rent_amount', e.target.value)} required />
+        </div>
+        <div className="flex gap-2 pt-1">
+          <button type="button" onClick={onClose} className="btn flex-1">Cancel</button>
+          <button type="submit" disabled={isPending} className="btn-primary flex-1 disabled:opacity-60">
+            {isPending ? 'Adding...' : 'Add unit'}
+          </button>
+        </div>
+      </form>
+    </Modal>
   )
 }
 

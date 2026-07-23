@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { format, differenceInDays } from 'date-fns'
 import { Search, Plus, Phone, Mail } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
-import { useProperties, useLeases } from '@/hooks/useProperties'
+import { useProperties, useLeases, useUnits } from '@/hooks/useProperties'
 import { formatUGX, formatUGXShort } from '@/lib/utils'
 import { Card, CardHeader, Avatar, StatusPill, PageLoader, EmptyState, MetricCard } from '@/components/shared'
+import { CreateLeaseModal, RenewLeaseModal, EndLeaseModal } from '@/pages/LeasesPage'
 
 export function TenantsPage() {
   const { profile } = useAuth()
@@ -12,9 +13,12 @@ export function TenantsPage() {
   const [selectedProperty, setSelectedProperty] = useState('')
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(null)
+  const [addTenantModal, setAddTenantModal] = useState(false)
 
   const propId = selectedProperty || properties[0]?.id
   const { data: leases = [], isLoading } = useLeases(propId)
+  const { data: units = [] } = useUnits(propId)
+  const vacantUnits = units.filter(u => !u.is_occupied)
 
   const filtered = leases.filter(l =>
     !search || l.tenant?.full_name.toLowerCase().includes(search.toLowerCase())
@@ -34,7 +38,12 @@ export function TenantsPage() {
           <h1 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100">Tenants</h1>
           <p className="text-sm text-gray-500 dark:text-gray-500 mt-0.5">{leases.length} active leases</p>
         </div>
-        <button type="button" className="btn-primary inline-flex items-center justify-center gap-1.5 text-sm w-full sm:w-auto">
+        <button
+          type="button"
+          onClick={() => setAddTenantModal(true)}
+          disabled={vacantUnits.length === 0}
+          className="btn-primary inline-flex items-center justify-center gap-1.5 text-sm w-full sm:w-auto disabled:opacity-50"
+        >
           <Plus size={14} /> Add tenant
         </button>
       </div>
@@ -74,7 +83,16 @@ export function TenantsPage() {
             <EmptyState
               title="No tenants found"
               description="Add tenants by creating a lease"
-              action={<button type="button" className="btn-primary text-sm px-4 py-2">Add tenant</button>}
+              action={
+                <button
+                  type="button"
+                  onClick={() => setAddTenantModal(true)}
+                  disabled={vacantUnits.length === 0}
+                  className="btn-primary text-sm px-4 py-2 disabled:opacity-50"
+                >
+                  Add tenant
+                </button>
+              }
             />
           ) : (
             <div className="space-y-1">
@@ -92,10 +110,14 @@ export function TenantsPage() {
 
         {selected && (
           <div className="w-full xl:w-72 xl:flex-shrink-0 space-y-3">
-            <TenantDetail lease={selected} />
+            <TenantDetail lease={selected} onDeselect={() => setSelected(null)} />
           </div>
         )}
       </div>
+
+      {addTenantModal && (
+        <CreateLeaseModal vacantUnits={vacantUnits} onClose={() => setAddTenantModal(false)} />
+      )}
     </div>
   )
 }
@@ -132,7 +154,10 @@ function TenantCard({ lease, isSelected, onClick }) {
   )
 }
 
-function TenantDetail({ lease }) {
+function TenantDetail({ lease, onDeselect }) {
+  const [renewModal, setRenewModal] = useState(false)
+  const [endModal, setEndModal] = useState(false)
+
   return (
     <>
       <Card>
@@ -174,10 +199,21 @@ function TenantDetail({ lease }) {
           ))}
         </div>
         <div className="mt-4 flex gap-2">
-          <button type="button" className="btn flex-1 text-xs">Renew</button>
-          <button type="button" className="btn flex-1 text-xs text-red-600 dark:text-red-400 border-red-200 hover:bg-red-50">End lease</button>
+          <button type="button" onClick={() => setRenewModal(true)} className="btn flex-1 text-xs">Renew</button>
+          <button
+            type="button"
+            onClick={() => setEndModal(true)}
+            className="btn flex-1 text-xs text-red-600 dark:text-red-400 border-red-200 hover:bg-red-50"
+          >
+            End lease
+          </button>
         </div>
       </Card>
+
+      {renewModal && <RenewLeaseModal lease={lease} onClose={() => setRenewModal(false)} />}
+      {endModal && (
+        <EndLeaseModal lease={lease} onClose={() => { setEndModal(false); onDeselect?.() }} />
+      )}
     </>
   )
 }

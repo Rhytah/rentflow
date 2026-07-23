@@ -5,16 +5,23 @@ import {
   Wrench, FileText, Settings, LogOut, X,
 } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
+import { useProperties } from '@/hooks/useProperties'
+import { useOverdueCount } from '@/hooks/usePayments'
+import { useOpenMaintenanceCount } from '@/hooks/useMaintenance'
 import { Avatar } from '@/components/shared'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
 
+const now = new Date()
+const MONTH = now.getMonth() + 1
+const YEAR = now.getFullYear()
+
 const navItems = [
   { label: 'Dashboard', icon: LayoutDashboard, to: '/' },
-  { label: 'Payments', icon: CreditCard, to: '/payments', badge: 3 },
+  { label: 'Payments', icon: CreditCard, to: '/payments' },
   { label: 'Utilities', icon: Zap, to: '/utilities' },
   { label: 'Tenants', icon: Users, to: '/tenants' },
   { label: 'Properties', icon: Building2, to: '/properties' },
-  { label: 'Maintenance', icon: Wrench, to: '/maintenance', badge: 2 },
+  { label: 'Maintenance', icon: Wrench, to: '/maintenance' },
   { label: 'Leases', icon: FileText, to: '/leases' },
 ]
 
@@ -30,7 +37,15 @@ export function Sidebar({ mobileNavOpen, onMobileClose }) {
   const navigate = useNavigate()
   const location = useLocation()
   const isTenant = profile?.role === 'tenant'
-  const items = isTenant ? tenantNav : navItems
+  const { data: properties = [] } = useProperties(isTenant ? undefined : profile?.id)
+  const propertyIds = properties.map(p => p.id)
+  const { data: overdueCount = 0 } = useOverdueCount(propertyIds, MONTH, YEAR)
+  const { data: openMaintenanceCount = 0 } = useOpenMaintenanceCount(isTenant ? [] : propertyIds)
+  const items = (isTenant ? tenantNav : navItems).map(item => {
+    if (item.to === '/payments' && !isTenant && overdueCount > 0) return { ...item, badge: overdueCount }
+    if (item.to === '/maintenance' && !isTenant && openMaintenanceCount > 0) return { ...item, badge: openMaintenanceCount }
+    return item
+  })
 
   useEffect(() => {
     onMobileClose()

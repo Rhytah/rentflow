@@ -57,6 +57,21 @@ export function useUnits(propertyId) {
   })
 }
 
+export function useCreateUnit() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input) => {
+      const { data, error } = await supabase.from('units').insert(input).select().single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: (_data, input) => {
+      qc.invalidateQueries({ queryKey: ['units', input.property_id] })
+      qc.invalidateQueries({ queryKey: ['properties'] })
+    },
+  })
+}
+
 // ── LEASES ───────────────────────────────────────────────────
 export function useLeases(propertyId) {
   return useQuery({
@@ -91,6 +106,49 @@ export function useMyLease(tenantId) {
         .single()
       if (error) throw error
       return data
+    },
+  })
+}
+
+export function useTenantProfiles() {
+  return useQuery({
+    queryKey: ['tenant-profiles'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles').select('id, full_name, phone, email').eq('role', 'tenant').order('full_name')
+      if (error) throw error
+      return data
+    },
+  })
+}
+
+export function useRenewLease() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, end_date }) => {
+      const { data, error } = await supabase.from('leases').update({ end_date }).eq('id', id).select().single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['leases'] })
+      qc.invalidateQueries({ queryKey: ['my-lease'] })
+    },
+  })
+}
+
+export function useEndLease() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id) => {
+      const { data, error } = await supabase.from('leases').update({ is_active: false }).eq('id', id).select().single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['leases'] })
+      qc.invalidateQueries({ queryKey: ['units'] })
+      qc.invalidateQueries({ queryKey: ['properties'] })
     },
   })
 }
@@ -135,6 +193,18 @@ export function useCreateUtilityBill() {
   return useMutation({
     mutationFn: async (input) => {
       const { data, error } = await supabase.from('utility_bills').insert(input).select().single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['utility-bills'] }),
+  })
+}
+
+export function useCreateSplitUtilityBills() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (rows) => {
+      const { data, error } = await supabase.from('utility_bills').insert(rows).select()
       if (error) throw error
       return data
     },

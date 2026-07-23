@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
-import { Search, Download, Send } from 'lucide-react'
+import { Search, Download, Send, MessageCircle, Mail, Phone as PhoneIcon } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { useProperties, useMyLease } from '@/hooks/useProperties'
 import { usePayments, usePaymentSummary, useRecordPayment, useMyPayments } from '@/hooks/usePayments'
-import { formatUGX, formatUGXShort, daysFromNow } from '@/lib/utils'
+import {
+  formatUGX, formatUGXShort, daysFromNow, downloadCSV,
+  waLink, smsLink, mailLink, escapeHtml,
+} from '@/lib/utils'
 import {
   MetricCard, Card, CardHeader, StatusPill, Avatar,
   Modal, PageLoader, EmptyState, ProgressBar,
@@ -34,8 +37,11 @@ function LandlordPayments() {
   const [statusFilter, setStatusFilter] = useState('')
   const [search, setSearch] = useState('')
   const [recordModal, setRecordModal] = useState(null)
+  const [receiptModal, setReceiptModal] = useState(null)
+  const [remindersModal, setRemindersModal] = useState(false)
 
   const propId = selectedProperty || properties[0]?.id
+  const property = properties.find(p => p.id === propId)
   const { data: payments = [], isLoading } = usePayments(propId, MONTH, YEAR)
   const { data: summary } = usePaymentSummary(propId ?? '', MONTH, YEAR)
 
@@ -44,6 +50,21 @@ function LandlordPayments() {
     const matchSearch = !search || p.tenant?.full_name.toLowerCase().includes(search.toLowerCase())
     return matchStatus && matchSearch
   })
+
+  const unpaid = payments.filter(p => p.status !== 'paid')
+
+  function handleExport() {
+    if (filtered.length === 0) { toast.error('No payments to export'); return }
+    const rows = [
+      ['Tenant', 'Unit', 'Amount due', 'Paid', 'Status', 'Method', 'Due date'],
+      ...filtered.map(p => [
+        p.tenant?.full_name, p.unit?.unit_number, p.amount_due, p.amount,
+        p.status, p.method ?? '', format(new Date(p.due_date), 'yyyy-MM-dd'),
+      ]),
+    ]
+    downloadCSV(`payments-${format(now, 'yyyy-MM')}.csv`, rows)
+    toast.success('Export downloaded')
+  }
 
   if (propsLoading) return <PageLoader />
 
@@ -55,11 +76,16 @@ function LandlordPayments() {
           <p className="text-sm text-gray-500 dark:text-gray-500 mt-0.5">{format(now, 'MMMM yyyy')} · Rent collection</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-          <button type="button" className="btn inline-flex items-center justify-center gap-1.5 text-sm w-full sm:w-auto">
+          <button type="button" onClick={handleExport} className="btn inline-flex items-center justify-center gap-1.5 text-sm w-full sm:w-auto">
             <Download size={14} /> Export
           </button>
-          <button type="button" className="btn inline-flex items-center justify-center gap-1.5 text-sm text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/30 w-full sm:w-auto">
-            <Send size={14} /> Send bulk reminders
+          <button
+            type="button"
+            onClick={() => setRemindersModal(true)}
+            disabled={unpaid.length === 0}
+            className="btn inline-flex items-center justify-center gap-1.5 text-sm text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/30 w-full sm:w-auto disabled:opacity-50"
+          >
+            <Send size={14} /> Send reminders
           </button>
         </div>
       </div>
@@ -142,6 +168,7 @@ function LandlordPayments() {
                     key={payment.id}
                     payment={payment}
                     onRecord={() => setRecordModal(payment)}
+                    onReceipt={() => setReceiptModal(payment)}
                   />
                 ))}
               </tbody>
@@ -156,11 +183,15 @@ function LandlordPayments() {
           onClose={() => setRecordModal(null)}
         />
       )}
+      {receiptModal && <ReceiptModal payment={receiptModal} property={property} onClose={() => setReceiptModal(null)} />}
+      {remindersModal && (
+        <SendRemindersModal payments={unpaid} property={property} onClose={() => setRemindersModal(false)} />
+      )}
     </div>
   )
 }
 
-function PaymentRow({ payment, onRecord }) {
+function PaymentRow({ payment, onRecord, onReceipt }) {
   const days = daysFromNow(payment.due_date)
   const isPaid = payment.status === 'paid'
 
@@ -202,7 +233,7 @@ function PaymentRow({ payment, onRecord }) {
           </button>
         )}
         {isPaid && (
-          <button type="button" className="btn text-xs px-2.5 py-1">Receipt</button>
+          <button type="button" onClick={onReceipt} className="btn text-xs px-2.5 py-1">Receipt</button>
         )}
       </td>
     </tr>
@@ -316,6 +347,7 @@ function TenantPayments() {
   const { data: payments = [], isLoading } = useMyPayments(profile?.id)
   const { data: lease } = useMyLease(profile?.id)
   const [payModal, setPayModal] = useState(null)
+  const [receiptModal, setReceiptModal] = useState(null)
 
   const current = payments.find(p =>
     p.period_month === MONTH && p.period_year === YEAR
@@ -405,7 +437,7 @@ function TenantPayments() {
                   <td className="py-3 text-gray-400 dark:text-gray-500 text-xs font-mono">{p.reference ?? '—'}</td>
                   <td className="py-3 text-right">
                     {p.status === 'paid' && (
-                      <button type="button" className="btn text-xs px-2 py-1">Receipt</button>
+                      <button type="button" onClick={() => setReceiptModal(p)} className="btn text-xs px-2 py-1">Receipt</button>
                     )}
                     {p.status !== 'paid' && (
                       <button type="button" onClick={() => setPayModal(p)} className="btn-primary text-xs px-2 py-1">
@@ -423,6 +455,14 @@ function TenantPayments() {
 
       {payModal && (
         <TenantPayModal payment={payModal} onClose={() => setPayModal(null)} />
+      )}
+      {receiptModal && (
+        <ReceiptModal
+          payment={receiptModal}
+          property={receiptModal.property}
+          tenantName={profile?.full_name}
+          onClose={() => setReceiptModal(null)}
+        />
       )}
     </div>
   )
@@ -502,6 +542,121 @@ function TenantPayModal({ payment, onClose }) {
           </button>
         </div>
       </form>
+    </Modal>
+  )
+}
+
+function receiptHTML({ payment, propertyName, tenantName, unitNumber }) {
+  const rows = [
+    ['Receipt #', payment.reference || payment.id.slice(0, 8).toUpperCase()],
+    ['Property', propertyName ?? '—'],
+    ['Unit', unitNumber ?? '—'],
+    ['Tenant', tenantName ?? '—'],
+    ['Period', format(new Date(payment.due_date), 'MMMM yyyy')],
+    ['Amount paid', formatUGX(payment.amount)],
+    ['Method', payment.method ? METHOD_LABELS[payment.method] : '—'],
+    ['Paid on', payment.paid_at ? format(new Date(payment.paid_at), 'd MMM yyyy, HH:mm') : '—'],
+  ]
+  return `<!doctype html><html><head><title>Receipt</title><style>
+    body{font-family:system-ui,sans-serif;padding:24px;color:#111}
+    h1{font-size:16px;margin:0 0 4px}
+    p.sub{color:#888;font-size:12px;margin:0 0 20px}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    td{padding:6px 0;border-bottom:1px solid #eee}
+    td:first-child{color:#888}
+    td:last-child{text-align:right;font-weight:600}
+    .total{margin-top:16px;text-align:right;font-size:18px;font-weight:700}
+  </style></head><body>
+    <h1>Payment Receipt</h1>
+    <p class="sub">RentFlow</p>
+    <table>${rows.map(([k, v]) => `<tr><td>${escapeHtml(k)}</td><td>${escapeHtml(v)}</td></tr>`).join('')}</table>
+    <p class="total">${escapeHtml(formatUGX(payment.amount))}</p>
+  </body></html>`
+}
+
+function ReceiptModal({ payment, property, tenantName, onClose }) {
+  const resolvedTenant = tenantName ?? payment.tenant?.full_name
+  const resolvedProperty = property?.name ?? payment.property?.name
+  const unitNumber = payment.unit?.unit_number
+
+  function handlePrint() {
+    const w = window.open('', '_blank', 'width=380,height=600')
+    if (!w) { toast.error('Allow pop-ups to print the receipt'); return }
+    w.document.write(receiptHTML({ payment, propertyName: resolvedProperty, tenantName: resolvedTenant, unitNumber }))
+    w.document.close()
+    w.focus()
+    w.print()
+  }
+
+  return (
+    <Modal open title="Payment receipt" onClose={onClose}>
+      <div className="space-y-3 text-sm">
+        {[
+          ['Property', resolvedProperty ?? '—'],
+          ['Unit', unitNumber ?? '—'],
+          ['Tenant', resolvedTenant ?? '—'],
+          ['Period', format(new Date(payment.due_date), 'MMMM yyyy')],
+          ['Method', payment.method ? METHOD_LABELS[payment.method] : '—'],
+          ['Paid on', payment.paid_at ? format(new Date(payment.paid_at), 'd MMM yyyy') : '—'],
+          ['Reference', payment.reference ?? '—'],
+        ].map(([label, val]) => (
+          <div key={label} className="flex justify-between">
+            <span className="text-gray-400 dark:text-gray-500">{label}</span>
+            <span className="text-gray-800 dark:text-gray-200 font-medium">{val}</span>
+          </div>
+        ))}
+        <div className="flex justify-between pt-2 border-t border-gray-100 dark:border-gray-800 text-base">
+          <span className="font-medium text-gray-700 dark:text-gray-300">Amount paid</span>
+          <span className="font-semibold text-gray-900 dark:text-gray-100">{formatUGX(payment.amount)}</span>
+        </div>
+      </div>
+      <div className="flex gap-2 pt-5">
+        <button type="button" onClick={onClose} className="btn flex-1">Close</button>
+        <button type="button" onClick={handlePrint} className="btn-primary flex-1">Print</button>
+      </div>
+    </Modal>
+  )
+}
+
+function SendRemindersModal({ payments, property, onClose }) {
+  return (
+    <Modal open title={`Send reminders — ${payments.length} tenant${payments.length === 1 ? '' : 's'}`} onClose={onClose}>
+      <div className="space-y-3 max-h-[60vh] overflow-y-auto -mx-1 px-1">
+        {payments.map(p => {
+          const total = Number(p.amount_due) + Number(p.late_fee)
+          const message = `Hi ${p.tenant?.full_name?.split(' ')[0] ?? ''}, this is a reminder that your rent of ${formatUGX(total)} for ${property?.name ?? 'your unit'}${p.unit?.unit_number ? ` (Unit ${p.unit.unit_number})` : ''} was due on ${format(new Date(p.due_date), 'd MMM yyyy')}. Kindly make payment at your earliest convenience. Thank you.`
+          return (
+            <div key={p.id} className="flex items-center gap-3 p-2.5 rounded-lg border border-gray-100 dark:border-gray-800">
+              <Avatar name={p.tenant?.full_name ?? '?'} />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{p.tenant?.full_name}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">{formatUGX(total)} · {p.tenant?.phone ?? 'No phone'}</p>
+              </div>
+              <div className="flex gap-1 shrink-0">
+                <a
+                  href={waLink(p.tenant?.phone, message)}
+                  target="_blank" rel="noopener noreferrer"
+                  className="btn p-1.5" title="WhatsApp"
+                >
+                  <MessageCircle size={14} />
+                </a>
+                <a href={smsLink(p.tenant?.phone, message)} className="btn p-1.5" title="SMS">
+                  <PhoneIcon size={14} />
+                </a>
+                <a
+                  href={mailLink(p.tenant?.email, 'Rent payment reminder', message)}
+                  className="btn p-1.5" title="Email"
+                >
+                  <Mail size={14} />
+                </a>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      <div className="pt-4">
+        <button type="button" onClick={onClose} className="btn w-full">Close</button>
+      </div>
     </Modal>
   )
 }
