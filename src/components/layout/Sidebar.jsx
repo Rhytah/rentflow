@@ -107,6 +107,7 @@ export function Sidebar({ mobileNavOpen, onMobileClose }) {
           <Settings size={15} />
           Settings
         </NavLink>
+        <ThemeToggle />
         <button
           type="button"
           onClick={async () => { await signOut(); navigate('/login') }}
