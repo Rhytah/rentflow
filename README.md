@@ -35,6 +35,7 @@ This creates all tables, enums, RLS policies, triggers, and views.
 cp .env.example .env
 ```
 
+
 Fill in your Supabase project URL and anon key (found in Project Settings → API).
 
 ### 4. Install dependencies and run
